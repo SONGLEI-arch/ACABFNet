@@ -42,28 +42,33 @@ class Attention(nn.Module):
         self.attn_drop = nn.Dropout(attn_drop)
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
+        
+        self.pos1 = nn.Parameter(torch.randn([1,l,C]))
+        self.pos2 = nn.Parameter(torch.randn([1,l,C]))
+        self.pos3 = nn.Parameter(torch.randn([1,self.num_heads,l,C // self.num_heads]))
+        self.pos4 = nn.Parameter(torch.randn([1, self.num_heads, l, C // self.num_heads]))
 
     def forward(self, x):
         B, N, C = x.shape
         l = int(math.sqrt(N))
         x_w = self.n3(x).reshape(B,l,l,C).view(B*l,l,C)#.transpose(1,2)
-        pos1 = nn.Parameter(torch.randn([1,l,C])).cuda()
-        x_w = x_w + pos1
+        
+        x_w = x_w + self.pos1
         x_w_q, x_w_k, x_w_v = self.ln1(x_w).reshape(B*l, l, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4) # B*l,head,lw,C
         x_ww = ((x_w_q @ x_w_k.transpose(-1,-2)) * self.scale).softmax(-1) # B*l,head,lw,lw
         x_ww = (x_ww @ x_w_v)#.transpose(1, 2).reshape(B, N, C) # B,lh,lw,C
-        pos3 = nn.Parameter(torch.randn([1,self.num_heads,l,C // self.num_heads])).cuda()
-        x_ww = x_ww + pos3
+        
+        x_ww = x_ww + self.pos3
         x_w_q, x_w_k, x_w_v = self.ln3(x_ww).reshape(B * l, self.num_heads, l, 3, C // self.num_heads).permute(3, 0, 1, 2, 4)
 
         x_h = self.n4(x).reshape(B,l,l,C).transpose(1,2).contiguous().view(B*l,l,C)#.transpose(1,2)
-        pos2 = nn.Parameter(torch.randn([1,l,C])).cuda()
-        x_h = x_h + pos2
+        
+        x_h = x_h + self.pos2
         x_h_q, x_h_k, x_h_v = self.ln2(x_h).reshape(B*l, l, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4) # B*l,head,lh,C
         x_hh = ((x_h_q @ x_h_k.transpose(-1,-2)) * self.scale).softmax(-1) # B*l,head,lh,lh
         x_hh = (x_hh @ x_h_v)#.reshape(B, l, self.num_heads,l, C // self.num_heads).permute(0,3,1,2,4).reshape(B, N, C)
-        pos4 = nn.Parameter(torch.randn([1, self.num_heads, l, C // self.num_heads])).cuda()
-        x_hh = x_hh + pos4
+        
+        x_hh = x_hh + self.pos4
         x_h_q, x_h_k, x_h_v = self.ln4(x_hh).reshape(B * l, self.num_heads, l, 3, C // self.num_heads).permute(3, 0, 1, 2, 4)
 
         # =========================================
