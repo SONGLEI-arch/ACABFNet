@@ -14,9 +14,7 @@ from assess import hist_sum, compute_metrics
 # from pytorchtools import EarlyStopping
 # from gary2RGB import create_visual_anno
 
-from DEMO4_baseline import CrossNet
-from UNet_ import UNet
-from build_BiSeNet import BiSeNet
+from model import CrossNet
 
 from LEVIR_CDdataset import BuildingChangeDataset
 # from datadataset import BuildingChangeDataset
@@ -25,9 +23,6 @@ from LEVIR_CDdataset import BuildingChangeDataset
 from index2one_hot import get_one_hot
 
 from poly import adjust_learning_rate_poly
-
-from edge_conv2d import edge_conv2d
-from focal_loss import FocalLoss
 
 import warnings
 warnings.filterwarnings('ignore')
